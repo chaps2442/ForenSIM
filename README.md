@@ -3,8 +3,6 @@
 
 ForenSIM V2 est une interface graphique moderne (basée sur `CustomTkinter`) conçue pour s'interfacer avec le puissant moteur open-source **[pySim](https://gitea.osmocom.org/sim-card/pysim)** d'Osmocom. Il permet aux investigateurs, forces de l'ordre et professionnels de la cybersécurité d'automatiser l'extraction et l'analyse des cartes SIM de manière sécurisée et intègre.
 
-![UI Sneak Peek](https://raw.githubusercontent.com/osmocom/pysim/master/README.md) <!-- Remplace ce lien par un vrai screenshot de ForenSIM V2 ! -->
-
 ## 🚀 Fonctionnalités Clés
 - **Diagnostic Matériel Intelligent :** Détection dynamique des lecteurs (PC/SC), évaluation de sécurité *"Gentle Poke"* (sans brûler de tentative PIN), et LED de connexion en temps réel.
 - **Support Universel :** Rétrocompatibilité automatisée (bascule instantanée entre DF.GSM pour les 2G et ADF.USIM pour les puces récentes).
@@ -16,7 +14,7 @@ ForenSIM V2 est une interface graphique moderne (basée sur `CustomTkinter`) con
 
 ### 1. Cloner ce dépôt
 ```bash
-git clone https://github.com/VOTRE-NOM/forensim-v2.git
+git clone https://github.com/chaps2442/forensim-v2.git
 cd forensim-v2
 ```
 
