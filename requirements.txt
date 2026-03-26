@@ -1,0 +1,5 @@
+# ForenSIM V2 Dependencies
+# Use `pip install -r requirements.txt` to setup the environment
+
+customtkinter>=5.2.2
+pyscard>=2.0.7

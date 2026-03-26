@@ -1,0 +1,48 @@
+# ForenSIM V2 - Expert Edition
+**Outil d'Investigation Numérique (Forensic) avancé pour cartes UICC / eUICC et SIM 2G.**
+
+ForenSIM V2 est une interface graphique moderne (basée sur `CustomTkinter`) conçue pour s'interfacer avec le puissant moteur open-source **[pySim](https://gitea.osmocom.org/sim-card/pysim)** d'Osmocom. Il permet aux investigateurs, forces de l'ordre et professionnels de la cybersécurité d'automatiser l'extraction et l'analyse des cartes SIM de manière sécurisée et intègre.
+
+![UI Sneak Peek](https://raw.githubusercontent.com/osmocom/pysim/master/README.md) <!-- Remplace ce lien par un vrai screenshot de ForenSIM V2 ! -->
+
+## 🚀 Fonctionnalités Clés
+- **Diagnostic Matériel Intelligent :** Détection dynamique des lecteurs (PC/SC), évaluation de sécurité *"Gentle Poke"* (sans brûler de tentative PIN), et LED de connexion en temps réel.
+- **Support Universel :** Rétrocompatibilité automatisée (bascule instantanée entre DF.GSM pour les 2G et ADF.USIM pour les puces récentes).
+- **Rapports Forensic Standardisés :** Génération automatique de `.txt` certifiés compatibles V1.0 avec extraction croisée IMSI/ICCID/MSISDN, et parsing de données profondes comme la `LANGUE`, le Service Provider (`SPN`) ou le `SMSC`.
+- **Mise sous Scellé Numérique :** L'extraction physique bit-à-bit et logique sont encapsulées dans un algorithme de compression avec validation `SHA-256` intégrée.
+- **Outils Intégrés :** Résolution MCC-MNC OSINT et utilitaire de clonage SIM à la volée sur sysmoISIM (Clés ADM supportées).
+
+## 🛠️ Installation & Pré-requis
+
+### 1. Cloner ce dépôt
+```bash
+git clone https://github.com/VOTRE-NOM/forensim-v2.git
+cd forensim-v2
+```
+
+### 2. Installer les dépendances Python
+ForenSIM est construit avec Python 3 et nécessite les paquets ci-dessous :
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Installer le moteur pySim (Requis)
+ForenSIM V2 n'est pas fourni avec le moteur `pySim` (qui possède ses propres règles de gestion, voir Osmocom). Vous devez le télécharger ou le cloner à part, n'importe où sur votre machine :
+```bash
+# Exemple de clonage du moteur officiel PySim :
+git clone https://gitea.osmocom.org/sim-card/pysim.git
+```
+*(Plus d'informations sur [pySim Dépôt Officiel](https://gitea.osmocom.org/sim-card/pysim))*
+
+### 4. Configuration au lancement
+Exécutez l'application :
+```bash
+python main.py
+```
+Lors de votre première utilisation, rendez-vous dans l'onglet **Extraction SIM** et cliquez sur le bouton "Parcourir" sous **"Dossier pySim :"** pour indiquer au logiciel où vous avez téléchargé le moteur Osmocom (étape 3). Ce chemin sera mémorisé pour les prochaines sessions.
+
+---
+## ⚖️ Avertissement Légal
+ForenSIM est un utilitaire pensé pour accompagner le processus judiciaire et l'audit technique. Toute utilisation d'extraction, de contournement d'accès non autorisé, ou de falsification d'identité réseau (clonage) sur des puces dont vous ne possédez pas les autorisations explicites est illégale. 
+
+Les contributeurs de ce code ne sauraient être tenus responsables de l'usage abusif de ces scripts.
