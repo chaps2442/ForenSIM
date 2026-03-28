@@ -1,6 +1,6 @@
 LANG = {
     "FR": {
-        "title": "ForenSIM Extractor V2 - Édition Expert",
+        "title": "ForenSIM Extractor - V2.01",
         "tab_mission": "🔍 Extraction SIM",
         "tab_scanner": "🛠️ Scanner SmartCard",
         "tab_osint": "🔎 OSINT & Parsing",
@@ -45,7 +45,7 @@ LANG = {
         "about_explanations": "📌 EXPLICATIONS TECHNIQUES :\n\n- Le mode 'Gentle Poke' (Null Verify) permet d'interroger le statut de sécurité de la carte sans soumettre de code PIN. L'outil lit l'EF.LOCI (6F7E) d'abord et évalue le SW1 SW2 renvoyé, ce qui ne brûle aucun essai.\n- Le 'Live PIN Test' envoie une commande VERIFY CHV (0x20) pour valider officiellement le code PIN entré.\n- Le scellé (tar.gz) capture le flux exact de lecture binaire du FileSystem et génère un hash SHA-256 automatique.",
     },
     "EN": {
-        "title": "ForenSIM Extractor V2 - Expert Edition",
+        "title": "ForenSIM Extractor - V2.01",
         "tab_mission": "🔍 SIM Extraction",
         "tab_scanner": "🛠️ SmartCard Scanner",
         "tab_osint": "🔎 OSINT & Parsing",

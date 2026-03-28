@@ -293,57 +293,44 @@ class MissionTab(ctk.CTkFrame):
         self.out_dir = out_dir
         self.ts = ts
 
-        # Building commands dynamically (GSM vs USIM) to stop pySim from crashing on SW errors
-        from core.smartcard_handler import check_is_usim
-        is_usim = check_is_usim(py_reader_idx)
-        
         cmds = ""
-        # IMPORTANT FIX: PIN INJECTION MUST BE FIRST
-        if pin:
-            cmds += f"verify_chv {pin}\n"
-            
-        cmds += "set exit_on_error false\n" 
-        cmds += "select MF\n"
-        if pin:
-            cmds += f"verify_chv {pin}\n"
-            
-        cmds += "select 2fe2\nread_binary\n"
-        cmds += "select 6f05\nread_binary\n"
+        cmds += "set exit_on_error false\n"
+        if pin: cmds += f"verify_chv {pin}\n"
         
-        if is_usim:
-            cmds += "select ADF.USIM\n"
-            if pin:
-                cmds += f"verify_chv {pin}\n"
-            cmds += "select 7f20\n"
-            cmds += "select 6f07\nread_binary\n" 
-            cmds += "select 6f7e\nread_binary\n" 
-            cmds += "select 6f7b\nread_binary\n" 
-            cmds += "select 6f46\nread_binary\n" 
-            cmds += "select 6f42\nread_binary\n" 
-        else:
-            cmds += "select DF.GSM\n"
-            if pin:
-                cmds += f"verify_chv {pin}\n"
-            cmds += "select 6f07\nread_binary\n" 
-            cmds += "select 6f7e\nread_binary\n" 
-            cmds += "select 6f7b\nread_binary\n" 
-            cmds += "select 6f46\nread_binary\n" 
-            cmds += "select 6f42\nread_binary\n" 
+        # 1. Racine (MF = 3f00) - ICCID et Langue
+        cmds += "select 3f00\n"
+        cmds += "select 2fe2\nread_binary\n"
+        cmds += "select 6f05\nread_binary\n" # Langue
+        
+        # 2. Répertoire 2G/3G (DF.GSM = 7f20)
+        cmds += "select 3f00\nselect 7f20\n"
+        cmds += "select 6f07\nread_binary\n" # IMSI
+        cmds += "select 6f7e\nread_binary\n" # LOCI
+        cmds += "select 6f7b\nread_binary\n" # FPLMN
+        cmds += "select 6f46\nread_binary\n" # SPN
+        cmds += "select 6f42\nread_binary\n" # SMSC
+        
+        # 3. Répertoire 4G/5G (ADF Actuel = 7fff)
+        cmds += "select 7fff\n"
+        cmds += "select 6f07\nread_binary\n" # IMSI
+        cmds += "select 6f7e\nread_binary\n" # LOCI
+        cmds += "select 6fe3\nread_binary\n" # EPSLOCI
+        cmds += "select 6f7b\nread_binary\n" # FPLMN
+        cmds += "select 6f46\nread_binary\n" # SPN
+        cmds += "select 6f42\nread_binary\n" # SMSC
+        
+        # 4. Répertoire Telecom (DF.TELECOM = 7f10)
+        cmds += "select 3f00\nselect 7f10\n"
+        cmds += "select 6f3a\nread_record 1\n" # Contacts
+        cmds += "select 6f3c\nread_record 1\n" # SMS
+        cmds += "select 6f40\nread_record 1\n" # MSISDN
+        cmds += "select 6f44\nread_record 1\n" # Calls (LND)
 
-        cmds += "select MF\nselect 7f10\n"   
-        cmds += "select 6f3a\nread\n"      # Contacts
-        cmds += "select 6f3c\nread\n"      # SMS
-        cmds += "select 6f40\nread\n"      # MSISDN
-        cmds += "select 6f44\nread\n"      # Calls (LND)
-
-        # File system dump commands
-        cmds += "select MF\n"
-        # Since verify_chv is at the top, no need to inject again unless PySim reset session.
-        # But we can re-inject just in case "export" needs it.
+        # 5. Exportation Massive (File System Dump)
+        # L'export sur la racine 3f00 est récursif et dumpera toute la carte trouvée
+        cmds += "select 3f00\n"
         if pin: cmds += f"verify_chv {pin}\n"
         cmds += "export\n"
-        app_dir = "ADF.USIM" if is_usim else "DF.GSM"
-        cmds += f"select {app_dir}\nexport\n"
         cmds += "quit\n"
         
         self.pysim_runner = PySimRunner(
@@ -418,27 +405,46 @@ class MissionTab(ctk.CTkFrame):
             pass
         return "Pays Inconnu"
 
-    def extract_hex_from_dump(self, content, file_id):
-        import re
-        pattern = re.compile(rf'(?i)(select [^\n]*{file_id}|"file_identifier":\s*"{file_id}")')
-        blocks = pattern.split(content)
-        if len(blocks) > 1:
-            target_block = blocks[-1]
-            lines = target_block.split('\n')
-            for line in lines[:60]:
-                line = line.strip()
-                # Support pour la commande export (update_binary et update_record)
-                if "update_binary" in line or "update_record" in line:
-                    parts = line.split()
-                    if len(parts) > 1 and re.match(r'^[0-9a-fA-F]+$', parts[-1]):
-                        return parts[-1]
-                # Support pour read_binary classique
-                candidate = line.replace(" ", "")
-                if candidate and len(candidate) >= 8 and re.match(r'^[0-9a-fA-F]+$', candidate):
-                    if not candidate.lower().startswith('ffffffff'):
-                        if "{" in line or "}" in line or ":" in line: continue
-                        return candidate
-        return None
+    def extract_hex_from_dump(self, dump_str, file_id):
+        file_id = file_id.lower()
+        lines = dump_str.split('\n')
+        
+        # Dictionnaire de traduction FID -> Noms (car pySim exporte avec les noms)
+        fid_to_name = {
+            "2fe2": "EF.ICCID",
+            "6f07": "EF.IMSI",
+            "6f7e": "EF.LOCI",
+            "6fe3": "EF.EPSLOCI",
+            "6f7b": "EF.FPLMN"
+        }
+        target_name = fid_to_name.get(file_id, "")
+
+        # Passe 1 : Chercher dans les blocs JSON (Les requêtes manuelles)
+        for i, line in enumerate(lines):
+            # On cherche l'ID du fichier au sein du JSON généré par pySim
+            if f'"file_id": "{file_id}"' in line.lower():
+                # On a trouvé le bloc. On descend jusqu'à l'accolade fermante "}"
+                for j in range(i, min(i+30, len(lines))):
+                    if lines[j].strip() == "}":
+                        # La réponse hexadécimale est TOUJOURS la ligne juste après
+                        if j + 1 < len(lines):
+                            val = lines[j+1].strip()
+                            # Sécurité : vérifier que c'est bien de l'hexa brut
+                            if len(val) >= 4 and all(c in "0123456789abcdefABCDEF" for c in val):
+                                return val
+                        break
+
+        # Passe 2 : Chercher dans la zone d'exportation avec les noms traduits (Fallback)
+        if target_name:
+            for i, line in enumerate(lines):
+                if target_name in line.upper() and i + 1 < len(lines):
+                    next_line = lines[i+1].strip()
+                    if next_line.startswith("update_binary"):
+                        parts = next_line.split(" ")
+                        if len(parts) >= 2:
+                            return parts[1]
+                            
+        return ""
 
     def decode_imsi(self, hex_str):
         if not hex_str or len(hex_str) < 18: return "Inaccessible"
@@ -506,10 +512,25 @@ class MissionTab(ctk.CTkFrame):
         # Si on arrive ici, c'est qu'il y avait des données mais pas un numéro valide
         return "Illisible ou masqué"
 
-    def decode_mcc(self, loci_hex):
-        if loci_hex and len(loci_hex) >= 14: 
-            return f"{loci_hex[9]}{loci_hex[8]}{loci_hex[11]}"
-        return None
+    def decode_plmn(self, hex_str, offset):
+        try:
+            if not hex_str or len(hex_str) < offset + 6: return None, None
+            plmn = hex_str[offset:offset+6].lower()
+            if "ff" in plmn or plmn == "000000": return None, None
+            
+            mcc = f"{plmn[1]}{plmn[0]}{plmn[3]}"
+            mnc3 = plmn[2]
+            mnc = f"{plmn[5]}{plmn[4]}"
+            if mnc3 != 'f': mnc += mnc3
+            
+            return str(mcc), str(mnc)
+        except Exception:
+            return None, None
+
+    def get_roaming_network(self, mcc, mnc, csv_path):
+        if not mcc or not mnc: return "Réseau Inconnu"
+        fake_imsi = f"{mcc}{mnc}0000000000"
+        return self.find_operator(fake_imsi, csv_path)
 
     def decode_language(self, hex_str):
         if not hex_str or "ffff" in hex_str.lower(): return "Non définie"
@@ -627,7 +648,7 @@ class MissionTab(ctk.CTkFrame):
             # --- GÉNÉRATION DU RAPPORT TEXTE V1.0 ---
             report_path = os.path.join(out_dir, "RAPPORT_EXPERT.txt")
             with open(report_path, "w", encoding="utf-8") as rf:
-                rf.write(f"RAPPORT D'EXPERTISE FORENSIC (USIM)\nDate: {self.ts}\n" + "="*60 + "\n\n")
+                rf.write(f"RAPPORT D'EXPERTISE FORENSIC (V2.01)\nDate: {self.ts}\n" + "="*60 + "\n\n")
                 
                 rf.write("--- 0. STATUT DE SECURITE ---\n")
                 rf.write(f"Vérification Matérielle : {getattr(self, 'last_sec_status', 'Unknown')}\n")
@@ -662,12 +683,26 @@ class MissionTab(ctk.CTkFrame):
                 rf.write(f"SMSC  : {self.decode_smsc(smsc_hex)}\n\n")
 
                 rf.write("--- 2. GEOLOCALISATION & TRACKING ---\n")
+                epsloci_hex = self.extract_hex_from_dump(content, "6fe3")
                 loci_hex = self.extract_hex_from_dump(content, "6f7e")
-                if loci_hex and "ffffffffffffffffff" in loci_hex.lower():
-                    rf.write("LOCI  : Jamais montée sur le réseau (Vierge)\n\n")
+                
+                mcc, mnc = None, None
+                try:
+                    res = self.decode_plmn(epsloci_hex, 24)
+                    if res and len(res) >= 2: mcc, mnc = res[0], res[1]
+                except Exception: pass
+                
+                if not mcc:
+                    try:
+                        res = self.decode_plmn(loci_hex, 8)
+                        if res and len(res) >= 2: mcc, mnc = res[0], res[1]
+                    except Exception: pass
+                    
+                if mcc and mnc:
+                    roaming_net = self.get_roaming_network(mcc, mnc, csv_db)
+                    rf.write(f"LOCI/EPSLOCI : Dernier réseau accroché -> {roaming_net} (MCC:{mcc}/MNC:{mnc})\n\n")
                 else:
-                    mcc_actuel = self.decode_mcc(loci_hex) if loci_hex else None
-                    rf.write(f"LOCI  : {self.find_country(mcc_actuel, csv_db) if mcc_actuel else 'Inconnue'}\n\n")
+                    rf.write("LOCI/EPSLOCI : Inconnue / Aucune trace réseau\n\n")
                 
                 rf.write("FPLMN :\n")
                 fplmn_hex = self.extract_hex_from_dump(content, "6f7b")
@@ -691,7 +726,7 @@ class MissionTab(ctk.CTkFrame):
             visual_summary = (
                 f"\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"  📝 RÉSUMÉ D'EXTRACTION (V1.0 Parity)\n"
+                f"  📝 RÉSUMÉ D'EXTRACTION (V2.01)\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"  ▪ PIN TESTÉ    : {pin_teste}\n"
                 f"  ▪ ICCID        : {self.decode_iccid(iccid_hex) if iccid_hex else 'Inaccessible'}\n"

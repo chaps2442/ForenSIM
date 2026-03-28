@@ -1,11 +1,13 @@
-# ForenSIM V2 - Expert Edition
+# ForenSIM V2.01 - Expert Edition
 **Outil d'Investigation Numérique (Forensic) avancé pour cartes UICC / eUICC et SIM 2G.**
 
-ForenSIM V2 est une interface graphique moderne (basée sur `CustomTkinter`) conçue pour s'interfacer avec le puissant moteur open-source **[pySim](https://gitea.osmocom.org/sim-card/pysim)** d'Osmocom. Il permet aux investigateurs, forces de l'ordre et professionnels de la cybersécurité d'automatiser l'extraction et l'analyse des cartes SIM de manière sécurisée et intègre.
+ForenSIM V2.01 est une interface graphique moderne (basée sur `CustomTkinter`) conçue pour s'interfacer avec le puissant moteur open-source **[pySim](https://gitea.osmocom.org/sim-card/pysim)** d'Osmocom. Il permet aux investigateurs, forces de l'ordre et professionnels de la cybersécurité d'automatiser l'extraction et l'analyse des cartes SIM de manière sécurisée et intègre.
 
+![Capture d'écran ForenSIM V2.01](https://via.placeholder.com/800x450.png?text=Insérer+Screenshot+Ici)
 ## 🚀 Fonctionnalités Clés
-- **Diagnostic Matériel Intelligent :** Détection dynamique des lecteurs (PC/SC), évaluation de sécurité *"Gentle Poke"* (sans brûler de tentative PIN), et LED de connexion en temps réel.
-- **Support Universel :** Rétrocompatibilité automatisée (bascule instantanée entre DF.GSM pour les 2G et ADF.USIM pour les puces récentes).
+- **Extraction "Universal Shotgun" (Nouveauté V2.01) :** Plus de bouton archaïque "2G" ou "USIM". Le moteur d'extraction lance une procédure agnostique exhaustive avec gestion de fallback silencieux via FIDs (ISO 7816) pour éviter les crashs sur les cartes MFF2 / eSIM et les cartes hybrides de dernière génération.
+- **Traçage Réseau 4G / LTE (Nouveauté V2.01) :** Extraction cryptomographique profonde des fichiers EPSLOCI (6FE3) couplée aux LOCI (6F7E) conventionnels. Identifier le dernier PLMN de la carte avec notre nouveau parseur de sortie JSON natif pySim.
+- **Diagnostic Matériel Intelligent :** Détection dynamique des lecteurs (PC/SC), évaluation de sécurité *"Gentle Poke"* (sans brûler de tentative PIN), interface d'aide au PINOUT matériel, et LED de connexion en temps réel.
 - **Rapports Forensic Standardisés :** Génération automatique de `.txt` certifiés compatibles V1.0 avec extraction croisée IMSI/ICCID/MSISDN, et parsing de données profondes comme la `LANGUE`, le Service Provider (`SPN`) ou le `SMSC`.
 - **Mise sous Scellé Numérique :** L'extraction physique bit-à-bit et logique sont encapsulées dans un algorithme de compression avec validation `SHA-256` intégrée.
 - **Outils Intégrés :** Résolution MCC-MNC OSINT et utilitaire de clonage SIM à la volée sur sysmoISIM (Clés ADM supportées).
@@ -14,8 +16,8 @@ ForenSIM V2 est une interface graphique moderne (basée sur `CustomTkinter`) con
 
 ### 1. Cloner ce dépôt
 ```bash
-git clone https://github.com/chaps2442/forensim-v2.git
-cd forensim-v2
+git clone https://github.com/chaps2442/ForenSIM.git
+cd ForenSIM
 ```
 
 ### 2. Installer les dépendances Python
@@ -25,7 +27,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. Installer le moteur pySim (Requis)
-ForenSIM V2 n'est pas fourni avec le moteur `pySim` (qui possède ses propres règles de gestion, voir Osmocom). Vous devez le télécharger ou le cloner à part, n'importe où sur votre machine :
+ForenSIM V2.01 n'est pas fourni avec le moteur `pySim` (qui possède ses propres règles de gestion, voir Osmocom). Vous devez le télécharger ou le cloner à part, n'importe où sur votre machine :
 ```bash
 # Exemple de clonage du moteur officiel PySim :
 git clone https://gitea.osmocom.org/sim-card/pysim.git
