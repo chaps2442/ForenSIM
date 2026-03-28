@@ -3,7 +3,7 @@
 
 ForenSIM V2.01 est une interface graphique moderne (basée sur `CustomTkinter`) conçue pour s'interfacer avec le puissant moteur open-source **[pySim](https://gitea.osmocom.org/sim-card/pysim)** d'Osmocom. Il permet aux investigateurs, forces de l'ordre et professionnels de la cybersécurité d'automatiser l'extraction et l'analyse des cartes SIM de manière sécurisée et intègre.
 
-![Capture d'écran ForenSIM V2.01](https://via.placeholder.com/800x450.png?text=Insérer+Screenshot+Ici)
+![Capture d'écran ForenSIM V2.01](assets/Screenshot.png)
 ## 🚀 Fonctionnalités Clés
 - **Extraction "Universal Shotgun" (Nouveauté V2.01) :** Plus de bouton archaïque "2G" ou "USIM". Le moteur d'extraction lance une procédure agnostique exhaustive avec gestion de fallback silencieux via FIDs (ISO 7816) pour éviter les crashs sur les cartes MFF2 / eSIM et les cartes hybrides de dernière génération.
 - **Traçage Réseau 4G / LTE (Nouveauté V2.01) :** Extraction cryptomographique profonde des fichiers EPSLOCI (6FE3) couplée aux LOCI (6F7E) conventionnels. Identifier le dernier PLMN de la carte avec notre nouveau parseur de sortie JSON natif pySim.
