@@ -4,6 +4,7 @@ from .tabs.osint_tab import OsintTab
 from .tabs.about_tab import AboutTab
 from .tabs.clone_tab import CloneTab
 from .tabs.risk_tab import RiskTab
+from .tabs.euicc_tab import EuiccTab
 from core.lang import LANG
 import ctypes
 
@@ -27,7 +28,7 @@ class ForenSimApp(ctk.CTk):
         # Navigation Frame
         self.nav_frame = ctk.CTkFrame(self, corner_radius=0)
         self.nav_frame.grid(row=0, column=0, sticky="nsew")
-        self.nav_frame.grid_rowconfigure(5, weight=1)
+        self.nav_frame.grid_rowconfigure(6, weight=1)
         
         # Branding
         self.logo_label = ctk.CTkLabel(
@@ -64,17 +65,24 @@ class ForenSimApp(ctk.CTk):
                                        anchor="w", command=lambda: self.select_tab("RiskTab"))
         self.btn_risk.grid(row=4, column=0, sticky="ew")
 
+        self.btn_euicc = ctk.CTkButton(self.nav_frame, corner_radius=0, height=40, border_spacing=10,
+                                       text="🛰 eUICC / eSIM",
+                                       fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                       anchor="w", command=lambda: self.select_tab("EuiccTab"))
+        self.btn_euicc.grid(row=5, column=0, sticky="ew")
+
         self.btn_about = ctk.CTkButton(self.nav_frame, corner_radius=0, height=40, border_spacing=10, 
                                        text=LANG[self.current_lang]["tab_about"],
                                        fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
                                        anchor="w", command=lambda: self.select_tab("AboutTab"))
-        self.btn_about.grid(row=5, column=0, sticky="ew")
+        self.btn_about.grid(row=6, column=0, sticky="ew")
 
         # Initialize content frames
         self.tabs["MissionTab"] = MissionTab(self)
         self.tabs["OsintTab"] = OsintTab(self)
         self.tabs["CloneTab"] = CloneTab(self)
         self.tabs["RiskTab"] = RiskTab(self)
+        self.tabs["EuiccTab"] = EuiccTab(self)
         self.tabs["AboutTab"] = AboutTab(self)
         
         self.btn_lang = ctk.CTkButton(self, text="🌍 EN/FR", width=100, height=30, fg_color="#333333", hover_color="#555555", command=self.toggle_lang)
@@ -103,6 +111,7 @@ class ForenSimApp(ctk.CTk):
         self.btn_osint.configure(fg_color=("gray75", "gray25") if tab_name == "OsintTab" else "transparent")
         self.btn_clone.configure(fg_color=("gray75", "gray25") if tab_name == "CloneTab" else "transparent")
         self.btn_risk.configure(fg_color=("gray75", "gray25") if tab_name == "RiskTab" else "transparent")
+        self.btn_euicc.configure(fg_color=("gray75", "gray25") if tab_name == "EuiccTab" else "transparent")
         self.btn_about.configure(fg_color=("gray75", "gray25") if tab_name == "AboutTab" else "transparent")
         
         # Hide all tabs
