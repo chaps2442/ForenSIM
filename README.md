@@ -1,4 +1,4 @@
-# ForenSIM V2.01 - Expert Edition
+# ForenSIM V2.02 - Expert Edition
 **Outil d'Investigation Numérique (Forensic) avancé pour cartes UICC / eUICC et SIM 2G.**
 
 ForenSIM V2.01 est une interface graphique moderne (basée sur `CustomTkinter`) conçue pour s'interfacer avec le puissant moteur open-source **[pySim](https://gitea.osmocom.org/sim-card/pysim)** d'Osmocom. Il permet aux investigateurs, forces de l'ordre et professionnels de la cybersécurité d'automatiser l'extraction et l'analyse des cartes SIM de manière sécurisée et intègre.
@@ -11,6 +11,7 @@ ForenSIM V2.01 est une interface graphique moderne (basée sur `CustomTkinter`) 
 - **Rapports Forensic Standardisés :** Génération automatique de `.txt` certifiés compatibles V1.0 avec extraction croisée IMSI/ICCID/MSISDN, et parsing de données profondes comme la `LANGUE`, le Service Provider (`SPN`) ou le `SMSC`.
 - **Mise sous Scellé Numérique :** L'extraction physique bit-à-bit et logique sont encapsulées dans un algorithme de compression avec validation `SHA-256` intégrée.
 - **Outils Intégrés :** Résolution MCC-MNC OSINT et utilitaire de clonage SIM à la volée sur sysmoISIM (Clés ADM supportées).
+- **eUICC / eSIM (Nouveauté V2.02) :** Onglet dédié pour TCU connected car. Lecture **EID** (eUICC Identifier), liste des **profils installés** (ICCID + ISD-P AID + état + opérateur), dump des règles **ARA-M** (Access Rule Application Master), détection automatique de la norme GSMA (**SGP.02 M2M legacy**, **SGP.22 Consumer**, **SGP.32 IoT** post-2023). Génération de rapport forensic dédié.
 
 ## 🛠️ Installation & Pré-requis
 
