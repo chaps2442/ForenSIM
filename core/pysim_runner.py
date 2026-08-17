@@ -61,6 +61,60 @@ def preflight_osmocom(python_exe=None, timeout=10):
     return False, f"Erreur d'import osmocom :\n{err[:500]}"
 
 
+def preflight_pysim_engine(pysim_path, python_exe=None, timeout=20):
+    """Pre-flight GENERIQUE du moteur pySim (V2.04).
+
+    Lance `python pySim-shell.py --help`. Comme tous les imports du moteur
+    (osmocom, cmd2, ...) s'executent AVANT que argparse n'affiche l'aide,
+    un demarrage propre (returncode 0 + 'usage') prouve que TOUTES les
+    dependances sont satisfaites. Sinon on renvoie la sortie d'erreur avec
+    un indice cible (osmocom, cmd2, module manquant).
+
+    Retourne (ok: bool, message: str).
+    """
+    import re
+    if python_exe is None:
+        python_exe = get_python_executable()
+    shell = os.path.join(pysim_path, "pySim-shell.py")
+    if not os.path.isfile(shell):
+        return False, ("pySim-shell.py introuvable dans :\n  %s\n"
+                       "Verifie le chemin du dossier pySim." % pysim_path)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = pysim_path
+    try:
+        proc = subprocess.run(
+            [python_exe, shell, "--help"],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, timeout=timeout, env=env,
+        )
+    except FileNotFoundError:
+        return False, f"Interpreteur Python introuvable : {python_exe}"
+    except subprocess.TimeoutExpired:
+        return False, "Timeout au demarrage de pySim-shell.py (pre-flight)."
+    except Exception as e:
+        return False, f"Erreur inattendue au pre-flight moteur : {e}"
+
+    out = proc.stdout or ""
+    if proc.returncode == 0 and ("usage" in out.lower() or "pySim" in out):
+        return True, "Moteur pySim OK"
+
+    hint = ""
+    if "No module named 'osmocom'" in out:
+        hint = "\n  -> pip install pyosmocom   (module 'osmocom' manquant)"
+    elif "cmd2" in out and ("ImportError" in out or "cannot import name" in out):
+        hint = ("\n  -> Version cmd2 incompatible avec ton clone pySim."
+                "\n     Corrige : cd <dossier pySim> && git pull && "
+                "pip install -r requirements.txt")
+    else:
+        m = re.search(r"No module named '([^']+)'", out)
+        if m:
+            hint = ("\n  -> Module manquant : %s   (pip install %s)"
+                    % (m.group(1), m.group(1)))
+    return False, ("Le moteur pySim ne demarre pas "
+                   "(pySim-shell.py --help a echoue)." + hint +
+                   "\n\n--- Sortie moteur ---\n" + out[-1200:])
+
+
 class PySimRunner:
     def __init__(self, pysim_path, reader_idx, output_dir, ui_queue):
         self.pysim_path = pysim_path
