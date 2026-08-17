@@ -14,8 +14,3 @@ pyscard>=2.0.7
 # (Alternative : lancer `pip install -r requirements.txt` DANS le dossier
 #  pySim que vous avez clone, ce qui tire toutes ses dependances.)
 pyosmocom>=0.0.3
-# ForenSIM V2 Dependencies
-# Use `pip install -r requirements.txt` to setup the environment
-
-customtkinter>=5.2.2
-pyscard>=2.0.7
