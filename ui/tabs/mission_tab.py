@@ -284,6 +284,23 @@ class MissionTab(ctk.CTkFrame):
         self.last_sec_status = sec_status
         self.last_pin_tested = self.validated_pin if self.validated_pin else "Non fourni"
 
+        # PRE-FLIGHT MOTEUR : le module 'osmocom' (paquet pyosmocom) doit etre
+        # importable par l'interpreteur qui lancera pySim-shell. Sinon pySim
+        # planterait en pleine extraction et on generait un rapport vide +
+        # un scelle trompeur. On bloque proprement AVANT de toucher la carte.
+        from core.pysim_runner import preflight_osmocom
+        engine_ok, engine_msg = preflight_osmocom()
+        if not engine_ok:
+            self.log("[!] --- MOTEUR pySim INDISPONIBLE ---\n")
+            self.log(engine_msg + "\n")
+            self.log("[!] Extraction annulee : aucun scelle genere.\n")
+            self.progressbar.stop()
+            self.progressbar.set(0)
+            self.btn_run.configure(state="normal")
+            self.btn_stop.configure(state="disabled")
+            return
+        self.log("[*] Moteur pySim : osmocom OK\n")
+
         pysim_path = self.pysim_path_var.get()
         if not os.path.exists(pysim_path):
             self.log("[!] Warning: pySim directory not found! Extraction will fail if pySim-shell is missing.\n")
@@ -648,7 +665,7 @@ class MissionTab(ctk.CTkFrame):
             # --- GÉNÉRATION DU RAPPORT TEXTE V1.0 ---
             report_path = os.path.join(out_dir, "RAPPORT_EXPERT.txt")
             with open(report_path, "w", encoding="utf-8") as rf:
-                rf.write(f"RAPPORT D'EXPERTISE FORENSIC (V2.01)\nDate: {self.ts}\n" + "="*60 + "\n\n")
+                rf.write(f"RAPPORT D'EXPERTISE FORENSIC (V2.03)\nDate: {self.ts}\n" + "="*60 + "\n\n")
                 
                 rf.write("--- 0. STATUT DE SECURITE ---\n")
                 rf.write(f"Vérification Matérielle : {getattr(self, 'last_sec_status', 'Unknown')}\n")
@@ -726,7 +743,7 @@ class MissionTab(ctk.CTkFrame):
             visual_summary = (
                 f"\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"  📝 RÉSUMÉ D'EXTRACTION (V2.01)\n"
+                f"  📝 RÉSUMÉ D'EXTRACTION (V2.03)\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"  ▪ PIN TESTÉ    : {pin_teste}\n"
                 f"  ▪ ICCID        : {self.decode_iccid(iccid_hex) if iccid_hex else 'Inaccessible'}\n"
