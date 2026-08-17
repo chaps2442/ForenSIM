@@ -1,8 +1,65 @@
 import os
+import sys
 import subprocess
 import threading
 import queue
 import datetime
+
+
+def get_python_executable():
+    """Interpreteur utilise pour lancer pySim-shell en sous-processus.
+
+    On reutilise le MEME interpreteur que celui qui fait tourner ForenSIM
+    (sys.executable), afin que le moteur pySim importe ses dependances
+    (osmocom / pyosmocom, pyscard, ...) depuis l'environnement ou elles ont
+    ete installees. Evite le piege classique ou ForenSIM est lance avec
+    `py -3.14` mais le sous-processus tapait un `python` different sur le PATH.
+    Repli sur "python" si sys.executable est indisponible (builds geles).
+    """
+    return sys.executable or "python"
+
+
+def preflight_osmocom(python_exe=None, timeout=10):
+    """Verifie que le module 'osmocom' (paquet pyosmocom) est importable.
+
+    Depuis 2024, pySim a deplace ses utilitaires internes dans un paquet
+    PyPI separe : 'pyosmocom' (importe sous le nom 'osmocom'). S'il manque,
+    pySim-shell.py plante avec 'ModuleNotFoundError: No module named osmocom'
+    EN PLEINE extraction -> rapport vide + scelle trompeur. On le detecte
+    donc en amont, avant de lancer quoi que ce soit sur la carte.
+
+    Retourne (ok: bool, message: str).
+    """
+    if python_exe is None:
+        python_exe = get_python_executable()
+    try:
+        proc = subprocess.run(
+            [python_exe, "-c",
+             "import osmocom, sys; sys.stdout.write(getattr(osmocom, '__file__', 'ok'))"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, timeout=timeout,
+        )
+    except FileNotFoundError:
+        return False, f"Interpreteur Python introuvable : {python_exe}"
+    except subprocess.TimeoutExpired:
+        return False, "Timeout lors de la verification du module osmocom."
+    except Exception as e:
+        return False, f"Erreur inattendue lors du pre-flight osmocom : {e}"
+
+    if proc.returncode == 0:
+        return True, "osmocom OK"
+
+    err = (proc.stderr or "").strip()
+    if "No module named 'osmocom'" in err or "ModuleNotFoundError" in err:
+        return False, (
+            "Le module 'osmocom' (moteur pySim) est introuvable.\n"
+            "  -> Corrige avec :  pip install pyosmocom\n"
+            "     (ou, dans ton dossier pySim :  pip install -r requirements.txt)\n"
+            "  Rappel : pySim >= 2024 a deplace ses utilitaires dans le paquet\n"
+            "  PyPI 'pyosmocom'."
+        )
+    return False, f"Erreur d'import osmocom :\n{err[:500]}"
+
 
 class PySimRunner:
     def __init__(self, pysim_path, reader_idx, output_dir, ui_queue):
@@ -33,7 +90,8 @@ class PySimRunner:
             f.write(cmds)
             
         shell_path = os.path.join(self.pysim_path, "pySim-shell.py")
-        cmd = ["python", shell_path, "-p", self.reader_idx, "--pcsc-shared", "--noprompt", "--script", script_path]
+        # On utilise le meme interpreteur que ForenSIM (voir get_python_executable)
+        cmd = [get_python_executable(), shell_path, "-p", self.reader_idx, "--pcsc-shared", "--noprompt", "--script", script_path]
         
         env = os.environ.copy()
         env["PYTHONPATH"] = self.pysim_path
