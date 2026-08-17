@@ -284,12 +284,13 @@ class MissionTab(ctk.CTkFrame):
         self.last_sec_status = sec_status
         self.last_pin_tested = self.validated_pin if self.validated_pin else "Non fourni"
 
-        # PRE-FLIGHT MOTEUR : le module 'osmocom' (paquet pyosmocom) doit etre
-        # importable par l'interpreteur qui lancera pySim-shell. Sinon pySim
-        # planterait en pleine extraction et on generait un rapport vide +
-        # un scelle trompeur. On bloque proprement AVANT de toucher la carte.
-        from core.pysim_runner import preflight_osmocom
-        engine_ok, engine_msg = preflight_osmocom()
+        # PRE-FLIGHT MOTEUR (V2.04) : demarrage reel de pySim-shell.py --help.
+        # Couvre TOUTES les dependances du moteur (osmocom, cmd2, ...), pas
+        # seulement un module precis. Si le moteur ne demarre pas, on bloque
+        # proprement AVANT de toucher la carte (aucun scelle trompeur).
+        from core.pysim_runner import preflight_pysim_engine
+        self._last_reader_idx = py_reader_idx
+        engine_ok, engine_msg = preflight_pysim_engine(self.pysim_path_var.get())
         if not engine_ok:
             self.log("[!] --- MOTEUR pySim INDISPONIBLE ---\n")
             self.log(engine_msg + "\n")
@@ -299,7 +300,7 @@ class MissionTab(ctk.CTkFrame):
             self.btn_run.configure(state="normal")
             self.btn_stop.configure(state="disabled")
             return
-        self.log("[*] Moteur pySim : osmocom OK\n")
+        self.log("[*] Moteur pySim : OK (pre-flight demarrage reussi)\n")
 
         pysim_path = self.pysim_path_var.get()
         if not os.path.exists(pysim_path):
@@ -311,7 +312,7 @@ class MissionTab(ctk.CTkFrame):
         self.ts = ts
 
         cmds = ""
-        cmds += "set exit_on_error false\n"
+        # (V2.04) "set exit_on_error" retire : plus supporte par pySim recent.
         if pin: cmds += f"verify_chv {pin}\n"
         
         # 1. Racine (MF = 3f00) - ICCID et Langue
@@ -621,6 +622,24 @@ class MissionTab(ctk.CTkFrame):
                     count += len(re.findall(r'"alpha_id"', block)) + len(re.findall(r'"ccm"', block))
         return f"{count} trouvés" if count > 0 else "Aucun / Vide"
 
+    def _read_atr(self, reader_idx=0):
+        """Lit l'ATR de la carte presente (identification meme si non-UICC)."""
+        try:
+            from smartcard.System import readers
+            r_list = readers()
+            if reader_idx >= len(r_list):
+                reader_idx = 0
+            conn = r_list[reader_idx].createConnection()
+            conn.connect()
+            atr = conn.getATR()
+            try:
+                conn.disconnect()
+            except Exception:
+                pass
+            return " ".join("%02X" % b for b in atr)
+        except Exception:
+            return None
+
     def finalize_extraction(self):
         self.progressbar.stop()
         out_dir = self.out_dir
@@ -660,12 +679,53 @@ class MissionTab(ctk.CTkFrame):
                             content += f.read() + "\n"
                     except: pass
 
+            # --- V2.04 : garde-fou carte NON-UICC / moteur non equipe ---
+            fail_markers = ("Unsupported card type", "pySim-shell not equipped",
+                            "Could not detect card type",
+                            "is not a recognized command")
+            engine_failed = any(m in content for m in fail_markers)
+            has_iccid = bool(self.extract_hex_from_dump(content, "2fe2"))
+            has_imsi = bool(self.extract_hex_from_dump(content, "6f07"))
+            if engine_failed and not (has_iccid or has_imsi):
+                atr = self._read_atr(getattr(self, "_last_reader_idx", 0))
+                self.log("\n[!] --- CARTE NON RECONNUE COMME SIM/UICC ---\n")
+                self.log("[!] pySim n'a pas reconnu cette carte : aucun ICCID/IMSI,\n")
+                self.log("    aucune donnee telecom extraite.\n")
+                if atr:
+                    self.log("[i] ATR de la carte : %s\n" % atr)
+                    self.log("    (carte proprietaire probable, ex. dongle de licence Z3X :\n")
+                    self.log("     identifiable par son ATR, mais contenu non extractible en SIM)\n")
+                report_path = os.path.join(out_dir, "RAPPORT_EXPERT.txt")
+                with open(report_path, "w", encoding="utf-8") as rf:
+                    rf.write("RAPPORT D'EXPERTISE FORENSIC (V2.04)\n")
+                    rf.write("Date: %s\n" % self.ts + "=" * 60 + "\n\n")
+                    rf.write("--- RESULTAT ---\n")
+                    rf.write("Carte NON reconnue comme SIM/UICC par le moteur pySim.\n")
+                    rf.write("Aucune donnee telecom (ICCID/IMSI/repertoire) lisible.\n\n")
+                    rf.write("Cause probable : carte a puce proprietaire (non-UICC),\n")
+                    rf.write("par exemple un dongle de licence (Z3X, etc.).\n\n")
+                    if atr:
+                        rf.write("ATR de la carte : %s\n" % atr)
+                        rf.write("(L'ATR identifie le type de puce. Le contenu proprietaire\n")
+                        rf.write(" n'est pas extractible avec un outil SIM forensique.)\n")
+                self.log("[+] Rapport d'identification genere : %s\n" % report_path)
+                self.log("[i] Aucun scelle .tar.gz : pas de donnee exploitable a sceller.\n")
+                def _reset_nouicc():
+                    self.btn_run.configure(state="normal")
+                    self.btn_stop.configure(state="disabled")
+                    try:
+                        os.startfile(out_dir)
+                    except Exception:
+                        pass
+                self.after(0, _reset_nouicc)
+                return
+
             csv_db = os.path.join(self.pysim_path_var.get(), "mcc-mnc.csv")
 
             # --- GÉNÉRATION DU RAPPORT TEXTE V1.0 ---
             report_path = os.path.join(out_dir, "RAPPORT_EXPERT.txt")
             with open(report_path, "w", encoding="utf-8") as rf:
-                rf.write(f"RAPPORT D'EXPERTISE FORENSIC (V2.03)\nDate: {self.ts}\n" + "="*60 + "\n\n")
+                rf.write(f"RAPPORT D'EXPERTISE FORENSIC (V2.04)\nDate: {self.ts}\n" + "="*60 + "\n\n")
                 
                 rf.write("--- 0. STATUT DE SECURITE ---\n")
                 rf.write(f"Vérification Matérielle : {getattr(self, 'last_sec_status', 'Unknown')}\n")
@@ -743,7 +803,7 @@ class MissionTab(ctk.CTkFrame):
             visual_summary = (
                 f"\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"  📝 RÉSUMÉ D'EXTRACTION (V2.03)\n"
+                f"  📝 RÉSUMÉ D'EXTRACTION (V2.04)\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"  ▪ PIN TESTÉ    : {pin_teste}\n"
                 f"  ▪ ICCID        : {self.decode_iccid(iccid_hex) if iccid_hex else 'Inaccessible'}\n"
