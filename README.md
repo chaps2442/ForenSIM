@@ -1,4 +1,4 @@
-# ForenSIM V2.03 - Expert Edition
+# ForenSIM V2.04 - Expert Edition
 **Outil d'Investigation Numérique (Forensic) avancé pour cartes UICC / eUICC et SIM 2G.**
 
 ForenSIM V2.01 est une interface graphique moderne (basée sur `CustomTkinter`) conçue pour s'interfacer avec le puissant moteur open-source **[pySim](https://gitea.osmocom.org/sim-card/pysim)** d'Osmocom. Il permet aux investigateurs, forces de l'ordre et professionnels de la cybersécurité d'automatiser l'extraction et l'analyse des cartes SIM de manière sécurisée et intègre.
@@ -59,6 +59,11 @@ Lors de votre première utilisation, rendez-vous dans l'onglet **Extraction SIM*
 
 ---
 ## 📜 Changelog
+
+### V2.04 (2026.08)
+- **Pré-flight générique du moteur** : au lieu de tester un module précis, ForenSIM lance réellement `pySim-shell.py --help` avant chaque extraction. Une seule vérification couvre **toutes** les dépendances (osmocom, cmd2, et les suivantes) avec un message d'aide ciblé.
+- **Garde-fou carte non-UICC** : si la carte n'est pas reconnue comme SIM/UICC (« Unsupported card type / not equipped »), ForenSIM capture l'**ATR** pour identification, génère un rapport d'identification clair et **ne scelle plus de rapport vide** (utile pour les cartes propriétaires type dongle de licence Z3X).
+- Retrait de la commande `set exit_on_error` (obsolète dans le pySim récent) qui polluait la sortie.
 
 ### V2.03 (2026.08)
 - **Fix majeur :** pré-flight du moteur pySim — détection de `pyosmocom`/`osmocom` manquant **avant** l'extraction, avec message d'aide explicite au lieu d'un crash silencieux produisant un rapport vide scellé.
