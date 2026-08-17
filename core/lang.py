@@ -1,6 +1,6 @@
 LANG = {
     "FR": {
-        "title": "ForenSIM Extractor - V2.01",
+        "title": "ForenSIM Extractor - V2.03",
         "tab_mission": "🔍 Extraction SIM",
         "tab_scanner": "🛠️ Scanner SmartCard",
         "tab_osint": "🔎 OSINT & Parsing",
@@ -42,10 +42,10 @@ LANG = {
         "about_desc": "Outil d'Investigation Numérique (Forensic) pour cartes UICC / eUICC.\nCréé pour automatiser la mise sous scellé (SHA-256) et l'extraction de preuves (Logical & File System).",
         "about_dev": "✒️ Développé et Audité par :",
         "about_links": "🔗 Ressources & Dépendances :",
-        "about_explanations": "📌 EXPLICATIONS TECHNIQUES :\n\n- Le mode 'Gentle Poke' (Null Verify) permet d'interroger le statut de sécurité de la carte sans soumettre de code PIN. L'outil lit l'EF.LOCI (6F7E) d'abord et évalue le SW1 SW2 renvoyé, ce qui ne brûle aucun essai.\n- Le 'Live PIN Test' envoie une commande VERIFY CHV (0x20) pour valider officiellement le code PIN entré.\n- Le scellé (tar.gz) capture le flux exact de lecture binaire du FileSystem et génère un hash SHA-256 automatique.",
+        "about_explanations": "📌 EXPLICATIONS TECHNIQUES :\n\n- Le mode 'Gentle Poke' (Null Verify) permet d'interroger le statut de sécurité de la carte sans soumettre de code PIN. L'outil lit l'EF.LOCI (6F7E) d'abord et évalue le SW1 SW2 renvoyé, ce qui ne brûle aucun essai.\n- Le 'Live PIN Test' envoie une commande VERIFY CHV (0x20) pour valider officiellement le code PIN entré.\n- Le scellé (tar.gz) capture le flux exact de lecture binaire du FileSystem et génère un hash SHA-256 automatique.\n- (V2.03) Un pré-flight vérifie que le moteur pySim (module 'osmocom' / paquet pyosmocom) est bien installé AVANT toute lecture : en cas d'absence, l'extraction est annulée proprement au lieu de produire un rapport vide scellé par erreur. ForenSIM et pySim utilisent désormais le même interpréteur Python.",
     },
     "EN": {
-        "title": "ForenSIM Extractor - V2.01",
+        "title": "ForenSIM Extractor - V2.03",
         "tab_mission": "🔍 SIM Extraction",
         "tab_scanner": "🛠️ SmartCard Scanner",
         "tab_osint": "🔎 OSINT & Parsing",
@@ -87,6 +87,6 @@ LANG = {
         "about_desc": "Digital Forensics Tool for UICC / eUICC cards.\nAutomated evidence extraction, parsing, and digital sealing (SHA-256).",
         "about_dev": "✒️ Developed and Audited by:",
         "about_links": "🔗 Resources & Dependencies:",
-        "about_explanations": "📌 TECHNICAL EXPLANATIONS:\n\n- The 'Gentle Poke' (Null Verify) mode checks the security status without burning any PIN attempts. It does this by reading EF.LOCI (6F7E) and evaluating the SW1 SW2 APDU response.\n- The 'Live PIN Test' sends a VERIFY CHV (0x20) command to officially validate the entered PIN code.\n- The digital seal (tar.gz) captures the raw binary read flow of the FileSystem and generates an automatic SHA-256 hash.",
+        "about_explanations": "📌 TECHNICAL EXPLANATIONS:\n\n- The 'Gentle Poke' (Null Verify) mode checks the security status without burning any PIN attempts. It does this by reading EF.LOCI (6F7E) and evaluating the SW1 SW2 APDU response.\n- The 'Live PIN Test' sends a VERIFY CHV (0x20) command to officially validate the entered PIN code.\n- The digital seal (tar.gz) captures the raw binary read flow of the FileSystem and generates an automatic SHA-256 hash.\n- (V2.03) A pre-flight check verifies the pySim engine ('osmocom' module / pyosmocom package) is installed BEFORE any read: if missing, extraction is aborted cleanly instead of producing an empty, wrongly-sealed report. ForenSIM and pySim now share the same Python interpreter.",
     }
 }
